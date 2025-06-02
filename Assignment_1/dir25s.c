@@ -87,7 +87,7 @@ void copy_dir(const char *src, const char *dest) {
         exit(EXIT_FAILURE);
     }
 
-    // Create destination directory
+    // Creation of destination directory
     if (mkdir(dest) == -1 && errno != EEXIST) {
         perror("mkdir");
         exit(EXIT_FAILURE);
@@ -137,7 +137,7 @@ void copy_dir(const char *src, const char *dest) {
     closedir(dir);
 }
 
-// Function to move a directory
+// Function to move a directory from one location to another
 void move_dir(const char *src, const char *dest) {
     if (rename(src, dest) == -1) {
         perror("rename");
