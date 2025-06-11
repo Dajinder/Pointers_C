@@ -11,7 +11,7 @@
 #include <dirent.h>
 #include <inttypes.h>
 
-
+// global variables
 char *tgt_filename = NULL;
 char *tgt_extension = NULL;
 char *subdir_list = NULL;
@@ -20,78 +20,77 @@ int dir_count = 0;
 off_t total_size = 0;
 int found = 0;
 
-// Function to list all files and directories
-int list_all(const char *file_path){
+// Call back function to list all files and directories present in path
+int list_all_cb(const char *file_path,const struct stat *sb, int type_flag, struct FTW *ftwbuf){
     printf("%s\n", file_path);
     return 0;
 }
 
-// Function to search for files with specific name
-int search_file(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
+// Call back function to search for files with specific name in directory
+int search_file_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
     if (strcmp(basename((char *)file_path), tgt_filename) == 0) { // strcmp comapres 2 strings lexicographically
         printf("\nFile found: %s\n", file_path); // print path of file if found
         file_count++;
     }
     return 0;
 }
-
-int listdir_callback(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
+// Call back function to search specific folder in the  given directory and sub-directory
+int list_dir_cb(const char *file_path, const struct stat *sb, int typeflag, struct FTW *ftwbuf) {
     if (typeflag == FTW_D) { // Only process directories
-        // Defensive copy to avoid modifying original path
         char fpath_copy[PATH_MAX];
-        strncpy(fpath_copy, fpath, PATH_MAX - 1);
+        strncpy(fpath_copy, file_path, PATH_MAX - 1);
         fpath_copy[PATH_MAX - 1] = '\0';
 
-        char *base = basename(fpath_copy);
-        if (base && strcmp(base, subdir_list) == 0) {
-            printf("Directory found: %s\n", fpath);
+        char *base = basename(fpath_copy); // create a base variable by taking basename of the filepath copied
+        if (base && strcmp(base, subdir_list) == 0) { //checking if base is present and match with subdir
+            printf("Directory found: %s\n", file_path);
             found = 1;
         }
-    } else if (typeflag == FTW_DNR) {
-        fprintf(stderr, "Warning: Cannot read directory %s: %s\n", fpath, strerror(errno));
-    } else if (typeflag == FTW_NS) {
-        fprintf(stderr, "Warning: Cannot stat %s: %s\n", fpath, strerror(errno));
+    } else if (typeflag == FTW_DNR) { // error handling in case of file is not read
+        fprintf(stderr, "Warning: Cannot read directory %s: %s\n", file_path, strerror(errno));
+    } else if (typeflag == FTW_NS) { //error handling if file is not stated
+        fprintf(stderr, "Warning: Cannot stat %s: %s\n", file_path, strerror(errno));
     }
     return 0;
 }
 
-// Function to list files with specific extension
-int list_by_extension(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
+// Call back function to list files with specific extension in specific directory and subdirectory
+int list_by_ext_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
     if (type_flag == FTW_F) {
         const char *ext = strrchr(file_path, '.'); //strrchr function is used to find the last occurence of the character in string
-        if (ext && strcmp(ext, tgt_extension) == 0) {
-            printf("%s\n", file_path);
-            file_count++;
+        if (ext && strcmp(ext, tgt_extension) == 0) { //string comparison of extension and target extension
+            printf("%s\n", file_path); // printing filepath
+            file_count++; //increasing the count variable by 1
         }
     }
     return 0;
 }
 
-// Function to count files
-int count_files(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
-    if (type_flag == FTW_F) file_count++;
+// call back function to count files
+int count_fl_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
+    if (type_flag == FTW_F) file_count++; //checking if file is present and increasing the file_count variable by 1
     return 0;
 }
 
-// Function to count directories
-int count_dirs(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
-    if (type_flag == FTW_D) dir_count++;
+// call back function to count directories ansd sub directories
+int count_dirs_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
+    if (type_flag == FTW_D) dir_count++; // checking if directory is present and increasing dir_counter variable by 1  
     return 0;
 }
 
-// Function to calculate total size of files
-int calc_size(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
-    if (type_flag == FTW_F) total_size += sb->st_size;
+// call back function to calculate total size of files
+int calc_size_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
+    if (type_flag == FTW_F) total_size += sb->st_size; // if the file type is regular, the size of file present in stat struct named sb and added with previous value in total_size variable 
     return 0;
 }
 
-// Function to delete files by extension
+// call back function to delete files by specific extension
 int dlt_by_ext_cb(const char *file_path, const struct stat *sb, int type_flag, struct FTW *ftwbuf) {
-    if (type_flag == FTW_F) {
-        const char *ext = strrchr(file_path, '.');
-        if (ext && strcmp(ext, tgt_extension) == 0) {
-            if (remove(file_path) == 0) {
-                printf("Deleted: %s\n", file_path);
+    if (type_flag == FTW_F) { //  check if the file type is regular
+        const char *ext = strrchr(file_path, '.'); // function used to find the last occurence of the character in string and storing it in character variable ext. 
+        if (ext && strcmp(ext, tgt_extension) == 0) { // checking if the string of ext variable is same as target extension
+            if (remove(file_path) == 0) { 
+                printf("Deleted: %s\n", file_path); //printing after deleting the file
                 file_count++;
             } else {
                 perror("remove");
@@ -101,7 +100,7 @@ int dlt_by_ext_cb(const char *file_path, const struct stat *sb, int type_flag, s
     return 0;
 }
 
-// Function to copy a directory recursively
+// call back function to copy a directory recursively
 void cp_dir_cb(const char *src, const char *dest) {
     struct stat st;
     if (stat(src, &st) == -1) {
@@ -177,30 +176,30 @@ int main(int argc, char *argv[]) {
     int fd_limit = 20;
 
     if (strcmp(argv[1], "-list") == 0 && argc == 3) { // checking the second argument in argv array is -list and perform next action accordingly
-        nftw(argv[2], list_all, fd_limit, flags);
+        nftw(argv[2], list_all_cb, fd_limit, flags);
     } else if (strcmp(argv[1], "-srch") == 0 && argc == 4) { //sample command: dir25s -srch file_name  file_path
         tgt_filename = argv[2];
-        nftw(argv[3], search_file, fd_limit, flags);
+        nftw(argv[3], search_file_cb, fd_limit, flags);
         if (file_count == 0) printf("No file named '%s' found in %s\n", tgt_filename, argv[3]);
     } else if (strcmp(argv[1], "-lext") == 0 && argc == 4) { //sample command: dir25s -lext  absolute path extension
         tgt_extension = argv[3];
-        nftw(argv[2], list_by_extension, fd_limit, flags);
+        nftw(argv[2], list_by_ext_cb, fd_limit, flags);
         if (file_count == 0) printf("No file with extension '%s' found in %s\n", tgt_extension, argv[2]); // print message if no file is found in the absolute path
-    } else if (strcmp(argv[1], "-listdir") == 0 && argc == 4) {
+    }else if (strcmp(argv[1], "-listdir") == 0 && argc == 4) { // sample command: dir25s -listdir  folder_name_to_search absolute path
         subdir_list = argv[2];
-        if (nftw(argv[3], listdir_callback, fd_limit, flags) == -1) {
+        if (nftw(argv[3], list_dir_cb, fd_limit, flags) == -1) {
             perror("nftw");
             exit(EXIT_FAILURE);
         }
-        if (!found) printf("No directories named '%s' found in %s\n", subdir_list, argv[3]);
-    } else if (strcmp(argv[1], "-countf") == 0 && argc == 3) { // sample command: dir25s -countf  absolute path
-        nftw(argv[2], count_files, fd_limit, flags);
+        if (!found) printf("No directories named '%s' found in %s\n", subdir_list, argv[3]); // message in case of no directory found
+    }  else if (strcmp(argv[1], "-countf") == 0 && argc == 3) { // sample command: dir25s -countf  absolute path
+        nftw(argv[2], count_fl_cb, fd_limit, flags);
         printf("Total files: %d\n", file_count); // print total number of files in directory and further subdirectories
     } else if (strcmp(argv[1], "-countd") == 0 && argc == 3) { // sample command: dir25s -countd absolute path of directory
-        nftw(argv[2], count_dirs, fd_limit, flags);
+        nftw(argv[2], count_dirs_cb, fd_limit, flags);
         printf("Total directories: %d\n", dir_count); // print total number of sub-directories present in path provided
     } else if (strcmp(argv[1], "-sizef") == 0 && argc == 3) { //sample command: dir25s -sizef absolute path
-        nftw(argv[2], calc_size, fd_limit, flags); 
+        nftw(argv[2], calc_size_cb, fd_limit, flags); 
         printf("Total size of files: %jd bytes\n", (intmax_t)total_size); // prints total bytes of files present in the provided path
     } else if (strcmp(argv[1], "-cp") == 0 && argc == 4) { // sample commannd: dir25s -cp (absolute path of directory and sub directory to be copied) (name of directory for content to be copied)
         cp_dir_cb(argv[2], argv[3]);
