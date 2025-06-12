@@ -9,6 +9,7 @@ void main(){
     long int n;
     n = read(fd, buff1, 10);
 
+    printf("%d\n", fd);
     printf("%d\n", n);
     printf("%s\n", buff1);
 }
