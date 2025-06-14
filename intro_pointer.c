@@ -15,8 +15,10 @@ int main(){
     printf("\nValue of *b is: %d\n", *b); //dereferencing of pointer; this should return the value(100) at the address pointing to variable b
     printf("\nValue of *c is %d\n",*c); // return the address
     printf("\nValue of **c is: %d\n", **c); //return the value (100)
-    printf("\nValue of ***d is: %d\n", *d); //return the address
-    printf("\nValue of ***d is: %d\n", **d); // return the address
+    printf("\nValue of *d is: %d\n", *d); //return the address
+    printf("\nValue of **d is: %d\n", **d); // return the address
     printf("\nValue of ***d is: %d\n", ***d); // return the val (100)
+
+    printf("\nn%d\n", &num);
     
 }
